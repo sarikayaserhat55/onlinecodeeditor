@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Kod Editörü</title>
+
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --panel: #2d2d2d;
+      --border: #333;
+      --text: #ddd;
+      --muted: #aaa;
+      --output: #111;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* yatay scroll kapalı */
+    }
+
+    .top-bar {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+
+    select, button {
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0; /* Monaco + flex için kritik */
+    }
+
+    /* Sol taraf (editör alanı) */
+    .editor-pane {
+      flex: 1 1 auto;
+      min-width: 0;   /* Monaco + flex için kritik */
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    /* Tek editör */
+    #singleEditor {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Split (HTML+CSS) */
+    #splitWrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .split-header {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      background: #262626;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .split-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .split-col {
+      flex: 1;
+      min-width: 0; /* Monaco için şart */
+      min-height: 0;
+    }
+
+    .divider {
+      width: 1px;
+      background: var(--border);
+      flex: 0 0 1px;
+    }
+
+    /* Preview (sağ taraf) */
+    .preview {
+      flex: 0 0 40%;
+      min-width: 40%;
+      max-width: 40%;
+      border-left: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .hidden { display: none !important; }
+
+    .output {
+      height: 160px;
+      background: var(--output);
+      border-top: 1px solid var(--border);
+      overflow: auto;
+      padding: 8px;
+      font-family: monospace;
+    }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      color: #888;
+      border-top: 1px solid var(--border);
+      background: #1a1a1a;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="top-bar">
+    <select id="languageSelect">
+      <option value="javascript">JavaScript</option>
+      <option value="typescript">TypeScript</option>
+      <option value="python">Python</option>
+      <option value="htmlcss">HTML + CSS</option>
+    </select>
+    <button id="runBtn">▶ Çalıştır</button>
+  </div>
+
+  <div class="main">
+    <div class="editor-pane" id="editorPane">
+      <!-- Tek editör -->
+      <div id="singleEditor"></div>
+
+      <!-- HTML + CSS split -->
+      <div id="splitWrap" class="hidden">
+        <div class="split-header">
+          <span>HTML</span>
+          <span style="opacity:.5;">|</span>
+          <span>CSS</span>
+        </div>
+        <div class="split-body">
+          <div class="split-col" id="htmlEditor"></div>
+          <div class="divider"></div>
+          <div class="split-col" id="cssEditor"></div>
+        </div>
+      </div>
+    </div>
+
+    <iframe class="preview hidden" id="preview"></iframe>
+  </div>
+
+  <div class="output"><pre id="output"></pre></div>
+
+  <!-- Monaco -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/loader.js"></script>
+  <script>
+    window.__editorReady = new Promise((resolve) => {
+      require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs" } });
+      require(["vs/editor/editor.main"], () => {
+        window.mainEditor = monaco.editor.create(document.getElementById("singleEditor"), {
+          value: "",
+          language: "javascript",
+          theme: "vs-dark",
+          automaticLayout: true
+        });
+
+        window.htmlEditor = monaco.editor.create(document.getElementById("htmlEditor"), {
+          value: "",
+          language: "html",
+          theme: "vs-dark",
+          automaticLayout: true
+        });
+
+        window.cssEditor = monaco.editor.create(document.getElementById("cssEditor"), {
+          value: "",
+          language: "css",
+          theme: "vs-dark",
+          automaticLayout: true
+        });
+
+        resolve();
+      });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/typescript@5.4.5/lib/typescript.js"></script>
+  <script src="libs/pyodide/pyodide.js"></script>
+  <script src="app.js"></script>
+
+  <footer>© 2025 Serhat Sarıkaya. Tüm hakları saklıdır.</footer>
+</body>
+</html>
