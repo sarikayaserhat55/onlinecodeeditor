@@ -1,213 +1,499 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Kod Editörü</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SCode</title>
 
-  <style>
-    :root {
-      --bg: #1e1e1e;
-      --panel: #2d2d2d;
-      --border: #333;
-      --text: #ddd;
-      --muted: #aaa;
-      --output: #111;
-    }
+    <style>
+      :root {
+        --bg0: #0b0f19;
+        --bg1: #0e1630;
+        --panel: rgba(25, 30, 48, 0.72);
+        --panel2: rgba(17, 20, 34, 0.72);
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #e7e7ea;
+        --muted: rgba(231, 231, 234, 0.6);
+        --output: rgba(10, 12, 20, 0.88);
 
-    * { box-sizing: border-box; }
+        --accent: #6ee7ff;
+        --accent2: #a78bfa;
+        --good: #34d399;
+        --bad: #fb7185;
 
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Arial, sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden; /* yatay scroll kapalı */
-    }
+        --radius: 16px;
+        --shadow: 0 16px 60px rgba(0, 0, 0, 0.55);
+      }
 
-    .top-bar {
-      display: flex;
-      gap: 10px;
-      padding: 10px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      align-items: center;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    select, button {
-      padding: 6px 10px;
-      cursor: pointer;
-    }
+      body {
+        margin: 0;
+        height: 100vh;
+        color: var(--text);
+        font-family: Arial, sans-serif;
+        overflow: hidden;
 
-    .main {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-      min-height: 0; /* Monaco + flex için kritik */
-    }
+        background: radial-gradient(
+            1200px 700px at 10% 0%,
+            rgba(110, 231, 255, 0.2),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 600px at 90% 10%,
+            rgba(167, 139, 250, 0.22),
+            transparent 55%
+          ),
+          linear-gradient(160deg, var(--bg0), var(--bg1));
+      }
 
-    /* Sol taraf (editör alanı) */
-    .editor-pane {
-      flex: 1 1 auto;
-      min-width: 0;   /* Monaco + flex için kritik */
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      border-right: 1px solid var(--border);
-    }
+      .app-shell {
+        height: 100vh;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
 
-    /* Tek editör */
-    #singleEditor {
-      flex: 1;
-      min-height: 0;
-    }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
 
-    /* Split (HTML+CSS) */
-    #splitWrap {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-    }
+      /* Top bar */
+      .top-bar {
+        display: flex;
+        gap: 10px;
+        padding: 10px 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
 
-    .split-header {
-      height: 28px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 10px;
-      background: #262626;
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 12px;
-      user-select: none;
-    }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 220px;
+      }
 
-    .split-body {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      overflow: hidden;
-    }
+      .brand-logo {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+      }
 
-    .split-col {
-      flex: 1;
-      min-width: 0; /* Monaco için şart */
-      min-height: 0;
-    }
+      .brand-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* taşmadan sığdırır */
+        display: block;
+        filter: drop-shadow(0 10px 20px rgba(110, 231, 255, 0.18));
+        user-select: none;
+        pointer-events: none;
+      }
 
-    .divider {
-      width: 1px;
-      background: var(--border);
-      flex: 0 0 1px;
-    }
+      .brand-title b {
+        font-size: 16px;
+        letter-spacing: 0.4px;
+      }
 
-    /* Preview (sağ taraf) */
-    .preview {
-      flex: 0 0 40%;
-      min-width: 40%;
-      max-width: 40%;
-      border-left: 1px solid var(--border);
-      background: #fff;
-    }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        justify-content: center;
+      }
 
-    .hidden { display: none !important; }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 220px;
+        justify-content: flex-end;
+      }
 
-    .output {
-      height: 160px;
-      background: var(--output);
-      border-top: 1px solid var(--border);
-      overflow: auto;
-      padding: 8px;
-      font-family: monospace;
-    }
+      select,
+      button {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 0.08s ease, background 0.15s ease,
+          border-color 0.15s ease;
+        outline: none;
+      }
 
-    footer {
-      text-align: center;
-      padding: 10px;
-      color: #888;
-      border-top: 1px solid var(--border);
-      background: #1a1a1a;
-    }
-  </style>
-</head>
+      select:hover,
+      button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.16);
+      }
 
-<body>
-  <div class="top-bar">
-    <select id="languageSelect">
-      <option value="javascript">JavaScript</option>
-      <option value="typescript">TypeScript</option>
-      <option value="python">Python</option>
-      <option value="htmlcss">HTML + CSS</option>
-    </select>
-    <button id="runBtn">▶ Çalıştır</button>
-  </div>
+      button:active {
+        transform: scale(0.97);
+      }
 
-  <div class="main">
-    <div class="editor-pane" id="editorPane">
-      <!-- Tek editör -->
-      <div id="singleEditor"></div>
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          rgba(110, 231, 255, 0.22),
+          rgba(167, 139, 250, 0.18)
+        );
+        border-color: rgba(110, 231, 255, 0.25);
+      }
 
-      <!-- HTML + CSS split -->
-      <div id="splitWrap" class="hidden">
-        <div class="split-header">
-          <span>HTML</span>
-          <span style="opacity:.5;">|</span>
-          <span>CSS</span>
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.15);
+        user-select: none;
+        white-space: nowrap;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--bad);
+        box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.12);
+      }
+
+      .dot.good {
+        background: var(--good);
+        box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.12);
+      }
+
+      /* Main */
+      .main {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
+      .editor-pane {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-right: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.12);
+        position: relative; /* watermark için */
+      }
+
+      /* WATERMARK */
+      /* Watermark artık her editör kutusunun içinde ayrı ayrı görünsün */
+      #singleEditor,
+      #htmlEditor,
+      #cssEditor {
+        position: relative;
+      }
+
+      /* Monaco içeriği üstte kalsın diye watermark'ı üst katmana koyuyoruz */
+      #singleEditor::after,
+      #htmlEditor::after,
+      #cssEditor::after {
+        content: "© 2025 Serhat Sarıkaya. Tüm hakları saklıdır.";
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        text-align: center;
+
+        pointer-events: none;
+        user-select: none;
+
+        opacity: 0.07; /* daha soft görünüm */
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        font-size: 32px;
+
+        color: rgba(231, 231, 234, 0.9);
+        text-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+
+        z-index: 5; /* Monaco’nun üstünde görünsün */
+      }
+
+      #singleEditor {
+        flex: 1;
+        min-height: 0;
+      }
+
+      #splitWrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .split-header {
+        height: 34px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        background: rgba(0, 0, 0, 0.22);
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+        user-select: none;
+        letter-spacing: 0.5px;
+      }
+
+      .split-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        overflow: hidden;
+      }
+
+      .split-col {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+      }
+      .divider {
+        width: 1px;
+        background: var(--border);
+        flex: 0 0 1px;
+      }
+
+      .preview {
+        flex: 0 0 40%;
+        min-width: 40%;
+        max-width: 40%;
+        border-left: 1px solid var(--border);
+        background: #fff;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* Output */
+      .output-wrap {
+        display: flex;
+        flex-direction: column;
+        height: 220px; /* uzatıldı */
+        min-height: 220px; /* uzatıldı */
+      }
+
+      .output-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel2);
+      }
+
+      .output-head b {
+        font-size: 13px;
+        letter-spacing: 0.3px;
+      }
+
+      .output {
+        flex: 1;
+        background: var(--output);
+        overflow: auto;
+        padding: 10px 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        line-height: 1.5;
+      }
+
+      /* Toast */
+      #toast {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        max-width: 360px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(17, 20, 34, 0.86);
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.55);
+        color: var(--text);
+        font-size: 13px;
+        transform: translateY(20px);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      #toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      #toast small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- TOP BAR -->
+      <div class="card top-bar">
+        <div class="brand">
+          <!-- Şeffaf S logo (inline SVG) -->
+          <div class="brand-logo" aria-hidden="true">
+            <div class="brand-logo">
+              <img src="assets/logo-s.png" alt="SCode logo" />
+            </div>
+          </div>
+
+          <div class="brand-title">
+            <b>SCode</b>
+          </div>
         </div>
-        <div class="split-body">
-          <div class="split-col" id="htmlEditor"></div>
-          <div class="divider"></div>
-          <div class="split-col" id="cssEditor"></div>
+
+        <div class="controls">
+          <select id="languageSelect">
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="python">Python</option>
+            <option value="htmlcss">HTML + CSS</option>
+          </select>
+
+          <!-- Sadece Online/Offline -->
+          <span class="pill" id="offlinePill">
+            <span class="dot" id="offlineDot"></span>
+            <span id="offlineText">Offline</span>
+          </span>
         </div>
+
+        <div class="actions">
+          <button id="openBtn">📂 Aç</button>
+          <button id="saveBtn">💾 Kaydet</button>
+          <button id="runBtn" class="btn-primary">▶ Çalıştır</button>
+
+          <input id="fileInput" class="hidden" type="file" multiple />
+        </div>
+      </div>
+
+      <!-- MAIN -->
+      <div class="card main">
+        <div class="editor-pane" id="editorPane">
+          <!-- WATERMARK (tam orta) -->
+
+          <div id="singleEditor"></div>
+
+          <div id="splitWrap" class="hidden">
+            <div class="split-header">
+              <span>HTML</span>
+              <span style="opacity: 0.5">|</span>
+              <span>CSS</span>
+            </div>
+            <div class="split-body">
+              <div class="split-col" id="htmlEditor"></div>
+              <div class="divider"></div>
+              <div class="split-col" id="cssEditor"></div>
+            </div>
+          </div>
+        </div>
+
+        <iframe class="preview hidden" id="preview"></iframe>
+      </div>
+
+      <!-- OUTPUT -->
+      <div class="card output-wrap">
+        <div class="output-head">
+          <b>Output</b>
+          <div style="display: flex; gap: 10px">
+            <button id="clearOutputBtn">🧹 Temizle</button>
+          </div>
+        </div>
+        <div class="output"><pre id="output" style="margin: 0"></pre></div>
       </div>
     </div>
 
-    <iframe class="preview hidden" id="preview"></iframe>
-  </div>
+    <div id="toast"></div>
 
-  <div class="output"><pre id="output"></pre></div>
+    <!-- OFFLINE Monaco -->
+    <script src="libs/monaco/vs/loader.js"></script>
+    <script>
+      window.__editorReady = new Promise((resolve) => {
+        require.config({ paths: { vs: "libs/monaco/vs" } });
+        require(["vs/editor/editor.main"], () => {
+          window.mainEditor = monaco.editor.create(
+            document.getElementById("singleEditor"),
+            {
+              padding: { top: 10, bottom: 10 },
+              fontFamily:
+                "Cascadia Code, Cascadia Mono, Consolas, 'Segoe UI Mono', 'Courier New', monospace",
+              fontSize: 14,
+              fontLigatures: true,
+              value: "",
+              language: "javascript",
+              theme: "vs-dark",
+              automaticLayout: true,
+            }
+          );
 
-  <!-- Monaco -->
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/loader.js"></script>
-  <script>
-    window.__editorReady = new Promise((resolve) => {
-      require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs" } });
-      require(["vs/editor/editor.main"], () => {
-        window.mainEditor = monaco.editor.create(document.getElementById("singleEditor"), {
-          value: "",
-          language: "javascript",
-          theme: "vs-dark",
-          automaticLayout: true
+          window.htmlEditor = monaco.editor.create(
+            document.getElementById("htmlEditor"),
+            {
+              padding: { top: 10, bottom: 10 },
+              fontFamily:
+                "Cascadia Code, Cascadia Mono, Consolas, 'Segoe UI Mono', 'Courier New', monospace",
+              fontSize: 14,
+              fontLigatures: true,
+              value: "",
+              language: "html",
+              theme: "vs-dark",
+              automaticLayout: true,
+            }
+          );
+
+          window.cssEditor = monaco.editor.create(
+            document.getElementById("cssEditor"),
+            {
+              padding: { top: 10, bottom: 10 },
+              fontFamily:
+                "Cascadia Code, Cascadia Mono, Consolas, 'Segoe UI Mono', 'Courier New', monospace",
+              fontSize: 14,
+              fontLigatures: true,
+              value: "",
+              language: "css",
+              theme: "vs-dark",
+              automaticLayout: true,
+            }
+          );
+
+          resolve();
         });
-
-        window.htmlEditor = monaco.editor.create(document.getElementById("htmlEditor"), {
-          value: "",
-          language: "html",
-          theme: "vs-dark",
-          automaticLayout: true
-        });
-
-        window.cssEditor = monaco.editor.create(document.getElementById("cssEditor"), {
-          value: "",
-          language: "css",
-          theme: "vs-dark",
-          automaticLayout: true
-        });
-
-        resolve();
       });
-    });
-  </script>
+    </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/typescript@5.4.5/lib/typescript.js"></script>
-  <script src="libs/pyodide/pyodide.js"></script>
-  <script src="app.js"></script>
+    <!-- OFFLINE TypeScript -->
+    <script src="libs/typescript/typescript.js"></script>
 
-  <footer>© 2025 Serhat Sarıkaya. Tüm hakları saklıdır.</footer>
-</body>
+    <!-- OFFLINE Pyodide -->
+    <script src="libs/pyodide/pyodide.js"></script>
+
+    <script src="app.js"></script>
+  </body>
 </html>
